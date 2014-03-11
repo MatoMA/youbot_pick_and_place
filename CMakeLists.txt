@@ -8,10 +8,20 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   sensor_msgs
   laser_geometry
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
+
+add_message_files(
+  FILES
+  ObjectLocation.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -25,7 +35,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package( 
     INCLUDE_DIRS include 
     #LIBRARIES youbot_pick_and_place 
-    CATKIN_DEPENDS pcl_conversions pcl_ros roscpp sensor_msgs 
+    CATKIN_DEPENDS message_runtime pcl_conversions pcl_ros roscpp sensor_msgs 
     #DEPENDS system_lib
 )
 

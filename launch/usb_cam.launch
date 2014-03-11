@@ -1,0 +1,11 @@
+<launch>
+    <node name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen" >
+        <param name="image_width" value="640" />
+        <param name="image_height" value="480" />
+        <rosparam param="D">[0.191399, -0.730157, 0.000886, -0.002581, 0.000000]</rosparam>
+        <param name="camera_frame_id" value="tf1" />
+        <rosparam param="K">[739.705321, 0.000000, 299.681584, 0.000000, 740.830608, 217.776761, 0.000000, 0.000000, 1.000000]</rosparam>
+        <rosparam param="R">[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]</rosparam>
+        <rosparam param="P">[745.475464, 0.000000, 297.534569, 0.000000, 0.000000, 749.160156, 217.502479, 0.000000, 0.000000, 0.000000, 1.000000, 0.000000]</rosparam>
+    </node>
+</launch>
