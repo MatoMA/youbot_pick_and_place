@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include <ros/console.h>
-#include <std_msgs/String.h>
+//#include <std_msgs/String.h>
+#include <tf/transform_broadcaster.h>
 #include <laser_geometry/laser_geometry.h>
 
 #include <sensor_msgs/PointCloud2.h>
@@ -9,7 +10,7 @@
 #include "youbot_pick_and_place/ObjectLocation.h"
 
 #define RANGE_X 1
-#define RANGE_Y 0.2
+#define RANGE_Y 0.5
 
 class Detector {
     public:
@@ -18,6 +19,7 @@ class Detector {
             //pub = node.advertise<sensor_msgs::PointCloud2>("laser_detector", 1);
             pub = node.advertise<youbot_pick_and_place::ObjectLocation>("laser_detector", 1);
             sub = node.subscribe("scan", 1, &Detector::callback, this);
+            
 
             while (ros::ok()) {
                 ros::spinOnce();
@@ -44,7 +46,7 @@ class Detector {
             //Find the closest object
             for(;it!=cloud.end(); it++) {
                 if(it->y < RANGE_Y && it->y > -RANGE_Y) {
-                    std::cout << it->x << "," << it->y << std::endl;
+                    //std::cout << it->x << "," << it->y << std::endl;
                     if(it->x < x) {
                         x = it->x;
                         y = it->y;
@@ -54,10 +56,14 @@ class Detector {
             //ROS_INFO("index: %d", i++);
 
             //Pub obj's location
-            if (x < RANGE_X) {
-                msg.x = x;
-                msg.y = y;
-                pub.publish(msg);
+            if (x < RANGE_X && y < RANGE_Y && y > -RANGE_Y) {
+                ROS_INFO("x: %f y: %f", x, y);
+                //msg.x = x;
+                //msg.y = y;
+                //pub.publish(msg);
+                transform.setOrigin(tf::Vector3(x, y, 0.0));
+                transform.setRotation(tf::Quaternion(0,0,0));
+                br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "base_laser_front_link", "object"));
             }
         }
 
@@ -66,6 +72,8 @@ class Detector {
         ros::NodeHandle node;
         ros::Publisher pub;
         ros::Subscriber sub;
+        tf::TransformBroadcaster br;
+        tf::Transform transform;
         
 };
 
