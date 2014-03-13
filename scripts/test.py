@@ -97,8 +97,8 @@ class ArmController():
         self.gripperPub.publish(pos)
 
     def closeGripper(self):
-        gripper_l.value = 0.0035
-        gripper_r.value = 0.0035
+        gripper_l.value = 0.0025
+        gripper_r.value = 0.0025
         pos = JointPositions()
         pos.positions = (gripper_l, gripper_r)
         self.gripperPub.publish(pos)

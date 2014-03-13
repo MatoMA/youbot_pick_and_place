@@ -1,0 +1,3 @@
+<launch>
+    <node name="laser_object_detector" pkg="youbot_pick_and_place" type="laser_object_detector"/>
+</launch>

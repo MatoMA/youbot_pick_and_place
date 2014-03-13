@@ -1,0 +1,4 @@
+<launch>
+    <include file="$(find youbot_pick_and_place)/launch/ar_track_alvar.launch" />
+    <include file="$(find youbot_pick_and_place)/launch/laser_object_detector.launch" />
+</launch>
