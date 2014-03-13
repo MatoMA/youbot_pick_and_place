@@ -54,7 +54,7 @@ class ArmController():
             self.state = 'start'
 
     def poseHome(self):
-        if self.state == 'start' or self.state == 'grap':
+        if self.state == 'start' or self.state == 'grap1' or self.state == 'grap2':
             joint_1.value = 2.9
             joint_2.value = 1.1
             joint_3.value = -2.5
@@ -75,19 +75,19 @@ class ArmController():
             pos = JointPositions()
             pos.positions = (joint_1, joint_2, joint_3, joint_4, joint_5)
             self.armPub.publish(pos)
-            self.state = 'grap'
+            self.state = 'grap1'
 
     def poseGrap2(self):
         if self.state == 'home':
-            joint_1.value = 2.9544
-            joint_2.value = 2.617
-            joint_3.value = -1.0732
-            joint_4.value = 0.32213
+            joint_1.value = 2.9
+            joint_2.value = 1.5
+            joint_3.value = -2.0
+            joint_4.value = 2.5
             joint_5.value = 3
             pos = JointPositions()
             pos.positions = (joint_1, joint_2, joint_3, joint_4, joint_5)
             self.armPub.publish(pos)
-            self.state = 'grap'
+            self.state = 'grap2'
 
     def openGripper(self):
         gripper_l.value = 0.0115
