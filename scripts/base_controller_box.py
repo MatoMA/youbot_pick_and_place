@@ -4,7 +4,6 @@ import rospy
 from geometry_msgs.msg import Twist
 import tf
 import math
-import time
 #from std_msgs.msg import String
 
 LINEAR_SPEED = 0.08
@@ -16,7 +15,7 @@ BACKWARDS = (-1, 0, 0)
 
 class Controller():
     def __init__(self):
-        rospy.init_node('base_controller')
+        rospy.init_node('base_controller_box')
         self.pub = rospy.Publisher('cmd_vel', Twist)
         self.tf_listener = tf.TransformListener()
         self.arrived = False
@@ -34,14 +33,14 @@ class Controller():
         #Norm of trans
         L = math.sqrt(sum([x**2 for x in trans]))
 
-        if L > 0.75:
+        if L > 0.30:
             norm = [x/L for x in trans]
             vel = [x*LINEAR_SPEED for x in norm]
+            time = L/LINEAR_SPEED
 
             cmd = Twist()
             cmd.linear.x = 1.5*vel[2]
             cmd.linear.y = -6.0*vel[0]
-            #print cmd
             self.pub.publish(cmd)
             rospy.sleep(0.1)
             
@@ -72,11 +71,11 @@ class Controller():
         while (not self.arrived and not rospy.is_shutdown()):
             try:
                 #now = rospy.Time.now()
-                self.tf_listener.waitForTransform('/base_cam_link','/ar_marker_1',rospy.Time(0),rospy.Duration(1))
-                (trans, rot) = self.tf_listener.lookupTransform('/base_cam_link','/ar_marker_1', rospy.Time(0))
+                self.tf_listener.waitForTransform('/base_cam_link','/ar_marker_2',rospy.Time(0),rospy.Duration(1))
+                (trans, rot) = self.tf_listener.lookupTransform('/base_cam_link','/ar_marker_2', rospy.Time(0))
                 #print trans
                 if trans_prec == trans[2]:
-                    if trans_prec <= 0.75:
+                    if trans_prec <= 0.30:
                         self.arrived = True
                         print "Robot en position"
                         self.stop()
@@ -92,12 +91,12 @@ class Controller():
         found = False
         while (not found and not rospy.is_shutdown()):
             try:
-                self.tf_listener.waitForTransform('/base_cam_link','/ar_marker_1',rospy.Time(0),rospy.Duration(1))
-                (trans, rot) = self.tf_listener.lookupTransform('/base_cam_link','/ar_marker_1', rospy.Time(0))
+                self.tf_listener.waitForTransform('/base_cam_link','/ar_marker_2',rospy.Time(0),rospy.Duration(1))
+                (trans, rot) = self.tf_listener.lookupTransform('/base_cam_link','/ar_marker_2', rospy.Time(0))
                 found = True
             except (tf.Exception):
                 self.rot(sens*0.2)
-                print "Recherche"
+                #print "Recherche"
                 continue
         self.stop()
         self.sens = -self.sens
