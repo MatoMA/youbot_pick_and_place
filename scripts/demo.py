@@ -202,9 +202,8 @@ class BaseController():
         self.stop()
         print "Robot en position"
 
-    def goToTag(self, tag, distance):
-        found = False
-        self.arrived = False
+    def init(self, tag):
+	found = False
         while (not found and not rospy.is_shutdown()):
             try:
                 self.tf_listener.waitForTransform('/base_cam_link',tag,rospy.Time(0),rospy.Duration(1))
@@ -216,6 +215,10 @@ class BaseController():
                 continue
         self.stop()
         self.sens = -self.sens
+
+    def goToTag(self, tag, distance):
+        self.arrived = False
+	self.init(tag)
 
         trans_prec = 0
         while (not self.arrived and not rospy.is_shutdown()):
@@ -236,7 +239,7 @@ class BaseController():
             except (tf.Exception, tf.LookupException):
                 print "Error"
                 self.stop()
-                self.init(self.sens)
+                self.init(tag)
 
 if __name__ == '__main__':
     rospy.init_node("pick_and_place")
@@ -261,6 +264,10 @@ if __name__ == '__main__':
     baseController.goToTag('/ar_marker_2', 0.30)
     rospy.sleep(1)
     armController.poseGrap2()
-    rospy.sleep(1)
+    rospy.sleep(2)
     armController.openGripper()
+    rospy.sleep(3)
+    armController.poseHome()
+    rospy.sleep(3)
+    armController.poseStart()
 
