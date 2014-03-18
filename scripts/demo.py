@@ -2,7 +2,7 @@
 import roslib; roslib.load_manifest('youbot_pick_and_place')
 import rospy
 from geometry_msgs.msg import Twist
-from brics_actuator import JointPositions, JointValue
+from brics_actuator.msg import JointPositions, JointValue
 import tf
 import math
 
@@ -30,7 +30,6 @@ joint_5.unit = 'rad'
 
 class ArmController():
     def __init__(self):
-        rospy.init_node("arm_controller")
         self.armPub = rospy.Publisher('/arm_1/arm_controller/position_command', JointPositions)
         self.gripperPub = rospy.Publisher('/arm_1/gripper_controller/position_command', JointPositions)
         self.state = 'start'
@@ -98,7 +97,7 @@ class ArmController():
         self.gripperPub.publish(pos)
 
 LINEAR_SPEED = 0.05
-#ANGULAR_SPEED = 1.2
+ANGULAR_SPEED = 1.2
 LEFT = (0, 1, 0)
 RIGHT = (0, -1, 0)
 FORWARDS = (1, 0, 0)
@@ -106,9 +105,10 @@ BACKWARDS = (-1, 0, 0)
 
 class BaseController():
     def __init__(self):
-        rospy.init_node('base_laser_controller')
         self.pub = rospy.Publisher('cmd_vel', Twist)
         self.tf_listener = tf.TransformListener()
+        self.arrived = False
+        self.sens = 1
 
     def go_x(self, trans):
         vel = trans*LINEAR_SPEED
@@ -125,6 +125,35 @@ class BaseController():
         cmd.linear.y = vel*5
         self.pub.publish(cmd)
         rospy.sleep(0.5)
+
+    def go(self, trans, distance):
+        #Norm of trans
+        L = math.sqrt(sum([x**2 for x in trans]))
+
+        if L > distance:
+            norm = [x/L for x in trans]
+            vel = [x*LINEAR_SPEED for x in norm]
+
+            cmd = Twist()
+            cmd.linear.x = 1.5*vel[2]
+            cmd.linear.y = -6.0*vel[0]
+            #print cmd
+            self.pub.publish(cmd)
+            rospy.sleep(0.1)
+
+        else:
+            self.arrived = True
+            print "Robot en position"
+
+        #Stop
+            self.stop()
+
+    def rot(self, angle):
+        cmd = Twist()
+        vel = angle*ANGULAR_SPEED
+        cmd.angular.z = vel
+        self.pub.publish(cmd)
+        rospy.sleep(0.1)
 
     def stop(self):
         cmd = Twist()
@@ -150,6 +179,7 @@ class BaseController():
                 #now = rospy.Time.now()
                 self.tf_listener.waitForTransform('/base_laser_front_link','/object',rospy.Time(0),rospy.Duration(1))
                 (trans, rot) = self.tf_listener.lookupTransform('/base_laser_front_link','/object', rospy.Time(0))
+                print 'object'
                 print trans
                 self.go_y(trans[1])
                 trans_prec = trans[1]
@@ -158,7 +188,7 @@ class BaseController():
                 self.stop()
 
         trans_prec = 1
-        while trans_prec > 0.225:
+        while trans_prec > 0.24:
             try:
                 #now = rospy.Time.now()
                 self.tf_listener.waitForTransform('/base_laser_front_link','/object',rospy.Time(0),rospy.Duration(1))
@@ -172,36 +202,65 @@ class BaseController():
         self.stop()
         print "Robot en position"
 
-    def go(self, trans):
-        #Norm of trans
-        L = math.sqrt(sum([x**2 for x in trans]))
+    def goToTag(self, tag, distance):
+        found = False
+        self.arrived = False
+        while (not found and not rospy.is_shutdown()):
+            try:
+                self.tf_listener.waitForTransform('/base_cam_link',tag,rospy.Time(0),rospy.Duration(1))
+                (trans, rot) = self.tf_listener.lookupTransform('/base_cam_link',tag, rospy.Time(0))
+                found = True
+            except (tf.Exception):
+                self.rot(self.sens*0.1)
+                print "Recherche"
+                continue
+        self.stop()
+        self.sens = -self.sens
 
-        if L > 0.75:
-            norm = [x/L for x in trans]
-            vel = [x*LINEAR_SPEED for x in norm]
-
-            cmd = Twist()
-            cmd.linear.x = 1.5*vel[2]
-            cmd.linear.y = -6.0*vel[0]
-            #print cmd
-            self.pub.publish(cmd)
-            rospy.sleep(0.1)
-
-        else:
-            self.arrived = True
-            print "Robot en position"
-
-        #Stop
-            self.stop()
-
-    def rot(self, angle):
-        cmd = Twist()
-        vel = angle*ANGULAR_SPEED
-        cmd.angular.z = vel
-        self.pub.publish(cmd)
-        rospy.sleep(0.1)
+        trans_prec = 0
+        while (not self.arrived and not rospy.is_shutdown()):
+            try:
+                #now = rospy.Time.now()
+                self.tf_listener.waitForTransform('/base_cam_link',tag,rospy.Time(0),rospy.Duration(1))
+                (trans, rot) = self.tf_listener.lookupTransform('/base_cam_link',tag, rospy.Time(0))
+                print 'tag'
+                print trans
+                if trans_prec == trans[2]:
+                    if trans_prec <= distance:
+                        self.arrived = True
+                        print "Robot en position"
+                        self.stop()
+                else:
+                    self.go(trans, distance)
+                    trans_prec = trans[2]
+            except (tf.Exception, tf.LookupException):
+                print "Error"
+                self.stop()
+                self.init(self.sens)
 
 if __name__ == '__main__':
-    controller = Controller()
-    controller.run()
+    rospy.init_node("pick_and_place")
+    armController = ArmController()
+    baseController = BaseController()
+    rospy.sleep(2)
+    armController.openGripper()
+    rospy.sleep(1)
+    armController.poseHome()
+    rospy.sleep(1)
+    armController.openGripper()
+    baseController.goToTag('/ar_marker_1', 0.75)
+    rospy.sleep(1)
+    armController.poseGrap1()
+    rospy.sleep(1)
+    baseController.goToObject()
+    rospy.sleep(1)
+    armController.closeGripper()
+    rospy.sleep(2)
+    armController.poseHome()
+    rospy.sleep(1)
+    baseController.goToTag('/ar_marker_2', 0.30)
+    rospy.sleep(1)
+    armController.poseGrap2()
+    rospy.sleep(1)
+    armController.openGripper()
 
