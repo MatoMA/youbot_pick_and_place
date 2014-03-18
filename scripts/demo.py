@@ -270,4 +270,6 @@ if __name__ == '__main__':
     armController.poseHome()
     rospy.sleep(3)
     armController.poseStart()
+    rospy.sleep(2)
+    armController.closeGripper()
 
